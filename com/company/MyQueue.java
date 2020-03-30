@@ -6,7 +6,7 @@ import java.util.List;
 public class MyQueue{
 
     private Object lock = new Object();
-    int maxSize = 3;
+    int maxSize;
     List<String> list = new ArrayList<String>(maxSize);
 
     public void MyQueue(int maxSize){
@@ -17,11 +17,11 @@ public class MyQueue{
         synchronized(lock) {
             try {
                 if (list.size() == maxSize) {
-                    System.out.println(Thread.currentThread().getName()+"--队列已满，正在等待...");
+                    System.out.println(Thread.currentThread().getName()+"---队列已满，正在等待...");
                     lock.wait();//等待释放锁
                 }
                 list.add(s);
-                System.out.println(Thread.currentThread().getName()+"--入栈成功！");
+                System.out.println(Thread.currentThread().getName()+"---入栈成功！");
                 Thread.sleep(1000);
                 lock.notifyAll();//唤醒释放锁
 
@@ -36,11 +36,11 @@ public class MyQueue{
         synchronized(lock) {
             try {
                 if (list.size() == 0) {
-                    System.out.println(Thread.currentThread().getName()+"--队列已空，正在等待...");
+                    System.out.println(Thread.currentThread().getName()+"---队列已空，正在等待...");
                     lock.wait();
                 }
                 list.remove(i);
-                System.out.println(Thread.currentThread().getName()+"--出栈成功！");
+                System.out.println(Thread.currentThread().getName()+"---出栈成功！");
                 Thread.sleep(1000);
                 lock.notifyAll();//唤醒释放锁
             }catch(Exception e) {
@@ -53,25 +53,21 @@ public class MyQueue{
     public static void main(String[] args) {
         final MyQueue queue = new MyQueue();
 
-        new Thread(new Runnable(){
-            public void run(){
-                queue.put("1");
-                queue.put("2");
-                queue.put("3");
-                queue.put("4");
-                queue.put("5");
-                queue.put("6");
-                queue.put("7");
-            }
+        new Thread(() -> {
+            queue.put("1");
+            queue.put("2");
+            queue.put("3");
+            queue.put("4");
+            queue.put("5");
+            queue.put("6");
+            queue.put("7");
         }).start();
 
-        new Thread(new Runnable() {
-            public void run(){
-                queue.get(0);
-                queue.get(0);
-                queue.get(0);
-                queue.get(0);
-            }
+        new Thread(() -> {
+            queue.get(0);
+            queue.get(0);
+            queue.get(0);
+            queue.get(0);
         }).start();
     }
 }
