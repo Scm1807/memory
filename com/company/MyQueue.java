@@ -6,14 +6,14 @@ import java.util.List;
 public class MyQueue{
 
     private Object lock = new Object();
-    int maxSize;
-    List<String> list = new ArrayList<String>(maxSize);
+    private int maxSize;
+    private List<String> list = new ArrayList<>(maxSize);
 
     public void MyQueue(int maxSize){
         this.maxSize = maxSize;
     }
 
-    public void put(String s) {
+    private void put(String s) {
         synchronized(lock) {
             try {
                 if (list.size() == maxSize) {
