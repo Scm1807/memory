@@ -6,7 +6,7 @@ package com.company;
  * @date 2018/2/28
  */
 public enum Personnel {
-    小明("男",21,86),
+    小明("男",22,86),
     小红("女",22,55){
         @Override
         public boolean isPass(){
