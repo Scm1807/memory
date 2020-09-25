@@ -1,0 +1,125 @@
+svn://work.karrytech.com:2902/DBSCRIPT/DEV/patches/24_OM/01_SCHEMA/2020-08-22_alter_PATIENTINFECTIONCARD_add_columns.sql
+—————————————————————————————————————————————————————————————————————————————————————————————————
+ALTER TABLE HEALTHCAREITEM ADD SINGLE_LINE_IND CHAR(1) DEFAULT 'N' NOT NULL;
+COMMENT ON COLUMN HEALTHCAREITEM.SINGLE_LINE_IND
+  IS '预检项目是否单独占一行(N:否 Y:是)';
+—————————————————————————————————————————————————————————————————————————————————————————————————
+ALTER TABLE AUDITAUTHPOLICY ADD AUDITOR_MINPROPORTION_LIMIT NUMBER(5,2) DEFAULT '0'; 
+COMMENT ON COLUMN AUDITAUTHPOLICY.AUDITOR_MINPROPORTION_LIMIT
+  IS '审核金额超出账单总金额比例时必须指定审核人的最低比例限制 0为不限制';
+—————————————————————————————————————————————————————————————————————————————————————————————————
+ALTER TABLE UNAUTHORISEDITEM ADD STOP_IND CHAR(1) DEFAULT 'N' NOT NULL;
+COMMENT ON COLUMN UNAUTHORISEDITEM.STOP_IND IS '取消\停止医嘱时是否校验处方权限(N:否 Y:是)';
+—————————————————————————————————————————————————————————————————————————————————————————————————
+ALTER TABLE PES_SUBSPECIALTYEXAMDETAIL ADD ITEM_RANGE VARCHAR2(50);
+COMMENT ON COLUMN PES_SUBSPECIALTYEXAMDETAIL.ITEM_RANGE IS '参考范围';
+—————————————————————————————————————————————————————————————————————————————————————————————————
+ALTER TABLE PATIENTINFECTIONCARD ADD STOP_TREATMENT_DATE DATE;
+COMMENT ON COLUMN PATIENTINFECTIONCARD.STOP_TREATMENT_DATE IS '停止治疗日期';
+—————————————————————————————————————————————————————————————————————————————————————————————————
+ALTER TABLE ORDERINCOMMONUSEMSTR ADD SEQ_NO NUMBER(5);
+COMMENT ON COLUMN ORDERINCOMMONUSEMSTR.SEQ_NO IS '序号';
+—————————————————————————————————————————————————————————————————————————————————————————————————
+--创建表时并创建外键约束
+CREATE TABLE SCORE(
+SCOREID INT PRIMARY KEY,
+STUID INT ,
+SCORE INT CONSTRAINT CK_SCORE CHECK(SCORE BETWEEN 0 AND 100),
+COURSENAME VARCHAR2(20) NOT NULL,
+CONSTRAINT FK_STUID FOREIGN KEY(STUID) REFERENCES STUDENT(STUID)
+);
+—————————————————————————————————————————————————————————————————————————————————————————————————
+--表创建成功后再添加外键约束 ：ALTER TABLE 从表表名 ADD CONSTRAINT 外键约束名称 FOREIGN KEY(列名) REFERENCES 主表名称(主键列名)
+--添加字段
+ALTER TABLE PATIENTEXPENDINFO ADD INTELLECTWARNINGPOLICY_ID NUMBER(38);
+COMMENT ON COLUMN PATIENTEXPENDINFO.INTELLECTWARNINGPOLICY_ID IS '患者智能提醒策略ID';
+--添加外键
+ALTER TABLE PATIENTEXPENDINFO ADD CONSTRAINT FK_PEI_IWP_ID FOREIGN KEY(INTELLECTWARNINGPOLICY_ID) 
+REFERENCES INTELLECTWARNINGPOLICY(INTELLECTWARNINGPOLICY_ID);
+--创建索引
+CREATE INDEX INDX_PEI_IWP_ID ON PATIENTEXPENDINFO(INTELLECTWARNINGPOLICY_ID);
+—————————————————————————————————————————————————————————————————————————————————————————————————
+--表创建成功后再添加外键约束 ：ALTER TABLE 从表表名 ADD CONSTRAINT 外键约束名称 FOREIGN KEY(列名) REFERENCES 主表名称(主键列名)
+--添加字段
+ALTER TABLE ADVERSEEVENTRECORD ADD PATIENT_ID NUMBER(38);
+COMMENT ON COLUMN ADVERSEEVENTRECORD.PATIENT_ID IS '患者ID';
+--添加外键
+ALTER TABLE ADVERSEEVENTRECORD ADD CONSTRAINT FK_AER_PATIENT_ID FOREIGN KEY(PATIENT_ID) 
+REFERENCES PATIENT(PATIENT_ID);
+—————————————————————————————————————————————————————————————————————————————————————————————————
+INSERT INTO PARAMETER
+  (ENTITYMSTR_ID,
+   PARAMETER_ID,
+   REMARKS,
+   LAST_UPDATED_BY,
+   LAST_UPDATED_DATETIME,
+   DEFUNCT_IND,
+   PARAMETER_CAT,
+   VALUE,
+   PARAMETER_NAME,
+   PARAMETER_DESC)
+VALUES
+  (NULL,
+   PGSYSFUNC.FXGENPRIMARYKEY(), 
+   '医生站控制开立诊断自动将诊断描述带入到诊断备注中，Y:自动带入，其他不带入',
+   0,
+   SYSDATE,
+   'N',
+   'MUCOM',
+   'N',
+   'AUTO_INPUT_DIAGNOSIS_DESC', 
+   '医生站控制开立诊断自动将诊断描述带入到诊断备注中，Y:自动带入，其他不带入');
+COMMIT;
+—————————————————————————————————————————————————————————————————————————————————————————————————
+UPDATE PARAMETER X
+   SET X.REMARKS        = '此参数为复合参数，英文逗号分割。参数1控制是否启用生命体征新版录入，参数2控制生命体征新页面显示多少天（整数）的数据。',
+       X.PARAMETER_DESC = '此参数为复合参数，英文逗号分割。参数1控制是否启用生命体征新版录入，参数2控制生命体征新页面显示多少天（整数）的数据。'
+ WHERE X.PARAMETER_NAME = 'VITAL_SIGNS_NEW_ENTRY';
+—————————————————————————————————————————————————————————————————————————————————————————————————
+INSERT INTO CODEMSTR (ENTITYMSTR_ID, PARENT_CODE_CAT, CODE_CAT, CODE_ABBR, CODE_DESC, CODE_DESC_LANG1, SHORT_CODE, CODE_SEQ, MAGIC, SYSTEM_IND, DEFUNCT_IND, MODULE_CAT,CODEMSTR_ID,LAST_UPDATED_BY, LAST_UPDATED_DATETIME,REMARKS) VALUES (1,'','CAT','QRS','质控记录状态','QC Record Status',PGSYSFUNC.FXGETPYFIRST('质控记录状态'),990,'','Y','N','NM',pgSysfunc.fxGenPrimaryKey(),0,sysdate,'');
+INSERT INTO CODEMSTR (ENTITYMSTR_ID, PARENT_CODE_CAT, CODE_CAT, CODE_ABBR, CODE_DESC, CODE_DESC_LANG1, SHORT_CODE, CODE_SEQ, MAGIC, SYSTEM_IND, DEFUNCT_IND, MODULE_CAT,CODEMSTR_ID,LAST_UPDATED_BY, LAST_UPDATED_DATETIME,REMARKS) VALUES (1,'','QRS','0','作废','Invalid',PGSYSFUNC.FXGETPYFIRST('作废'),0,'','N','N','NM',pgSysfunc.fxGenPrimaryKey(),0,sysdate,'');
+INSERT INTO CODEMSTR (ENTITYMSTR_ID, PARENT_CODE_CAT, CODE_CAT, CODE_ABBR, CODE_DESC, CODE_DESC_LANG1, SHORT_CODE, CODE_SEQ, MAGIC, SYSTEM_IND, DEFUNCT_IND, MODULE_CAT,CODEMSTR_ID,LAST_UPDATED_BY, LAST_UPDATED_DATETIME,REMARKS) VALUES (1,'','QRS','1','新建','Newly build',PGSYSFUNC.FXGETPYFIRST('新建'),1,'','N','N','NM',pgSysfunc.fxGenPrimaryKey(),0,sysdate,'');
+INSERT INTO CODEMSTR (ENTITYMSTR_ID, PARENT_CODE_CAT, CODE_CAT, CODE_ABBR, CODE_DESC, CODE_DESC_LANG1, SHORT_CODE, CODE_SEQ, MAGIC, SYSTEM_IND, DEFUNCT_IND, MODULE_CAT,CODEMSTR_ID,LAST_UPDATED_BY, LAST_UPDATED_DATETIME,REMARKS) VALUES (1,'','QRS','2','暂存','Staged',PGSYSFUNC.FXGETPYFIRST('暂存'),2,'','N','N','NM',pgSysfunc.fxGenPrimaryKey(),0,sysdate,'');
+INSERT INTO CODEMSTR (ENTITYMSTR_ID, PARENT_CODE_CAT, CODE_CAT, CODE_ABBR, CODE_DESC, CODE_DESC_LANG1, SHORT_CODE, CODE_SEQ, MAGIC, SYSTEM_IND, DEFUNCT_IND, MODULE_CAT,CODEMSTR_ID,LAST_UPDATED_BY, LAST_UPDATED_DATETIME,REMARKS) VALUES (1,'','QRS','3','检查完成','Completed',PGSYSFUNC.FXGETPYFIRST('检查完成'),3,'','N','N','NM',pgSysfunc.fxGenPrimaryKey(),0,sysdate,'');
+COMMIT;
+—————————————————————————————————————————————————————————————————————————————————————————————————
+
+
+—————————————————————————————————————————————————————————————————————————————————————————————————
+1、精通Java SE、Java EE基础
+2、掌握JVM运行机制，调优经验
+3、了解常见算法、设计模式
+4、熟练使用：MVC框架、ORM框架
+5、懂得运行原理、设计思想
+熟悉RPC框架（struts、mybatis、hibernate、spring、dubbo）
+6、熟悉机制
+分布式、缓存（Redis、Mongoodb）
+消息（RabbitMQ、ActiveMQ）
+搜索（lucene、solr、ElasticSearch）
+分布式系统开发、重构、优化、拆分、集群架构设计和使用经验优先
+7、熟练使用：Mysql、Oracle
+熟悉数据库原理及常用性能优化、
+事物、锁机制原理较深了解
+高并发环境下数据库优化经验优先
+8、熟悉HTML/CSS/JS周边常用框架
+大量使用前端技术优先
+9、熟悉Linux、熟练使用Linux命令
+有Linux问题排查调优经验优先
+
+第一种（我常用）
+git stash 工作区修改的代码放入暂存区
+git pull 将远端库的代码更新至本地
+git stash pop 将暂存区修改的代码与现有最新代码merge，可能存在冲突，需要解决冲突文件
+git add files（解决冲突后的文件）
+git commit -m "说明"
+git push
+
+第二种
+git fetch 命令详情
+git merge 若无冲突，直接merge成功，若有冲突，会显示冲突文件
+git add . 
+git commit -m "说明" 将工作区修改代码提交至本地仓库，这样可以用mergetool与fetch的新代码比较
+git mergetool  比较冲突的文件，左侧窗口是工作区修改的代码，中间是本地仓库代码；右侧是远端仓库的修改代码，将需要的功能，同步至中间窗口保存即可
+ mergetool设置方法
+git commit -m " "将解决冲突后的文件提交，结束合并流程
+git push
